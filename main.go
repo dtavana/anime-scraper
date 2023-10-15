@@ -17,6 +17,7 @@ func init() {
 }
 
 var s *discordgo.Session
+
 func init() {
 	var err error
 	s, err = discordgo.New("Bot " + os.Getenv("BOT_TOKEN"))
@@ -26,9 +27,10 @@ func init() {
 }
 
 var (
-	db *handlers.DatabaseHandler
+	db           *handlers.DatabaseHandler
 	notification *handlers.NotificationHandler
 )
+
 func init() {
 	db = handlers.MakeDatabaseHandler()
 	notification = handlers.MakeNotificationHandler(db, s)

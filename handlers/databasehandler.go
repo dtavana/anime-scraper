@@ -7,17 +7,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-    "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Item struct {
-	Url string
+	Url         string
 	LastEpisode int
 }
 
 type DatabaseHandler struct {
 	session *session.Session
-	svc *dynamodb.DynamoDB
+	svc     *dynamodb.DynamoDB
 }
 
 func MakeDatabaseHandler() *DatabaseHandler {
@@ -27,7 +27,7 @@ func MakeDatabaseHandler() *DatabaseHandler {
 		},
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	
+
 	svc := dynamodb.New(session)
 	handler := &DatabaseHandler{session, svc}
 	handler.setupDatabase()
@@ -41,7 +41,7 @@ func (d DatabaseHandler) setupDatabase() {
 		},
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	
+
 	d.svc = dynamodb.New(d.session)
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
@@ -53,11 +53,11 @@ func (d DatabaseHandler) setupDatabase() {
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
 				AttributeName: aws.String("url"),
-				KeyType: aws.String("HASH"),
+				KeyType:       aws.String("HASH"),
 			},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits: aws.Int64(5),
+			ReadCapacityUnits:  aws.Int64(5),
 			WriteCapacityUnits: aws.Int64(5),
 		},
 		TableName: aws.String(os.Getenv("DB_TABLE")),
