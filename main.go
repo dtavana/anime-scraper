@@ -1,6 +1,7 @@
 package main
 
 import (
+	"animescraper/handlers"
 	"log"
 	"os"
 
@@ -24,5 +25,15 @@ func init() {
 	}
 }
 
+var (
+	db *handlers.DatabaseHandler
+	notification *handlers.NotificationHandler
+)
+func init() {
+	db = handlers.MakeDatabaseHandler()
+	notification = handlers.MakeNotificationHandler(db, s)
+}
+
 func main() {
+	notification.QueryForAnime("test")
 }
