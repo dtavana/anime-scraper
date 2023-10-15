@@ -4,6 +4,7 @@ import (
 	"animescraper/handlers"
 	"log"
 	"os"
+	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -16,11 +17,11 @@ func init() {
 	}
 }
 
-var s *discordgo.Session
+var dis *discordgo.Session
 
 func init() {
 	var err error
-	s, err = discordgo.New("Bot " + os.Getenv("BOT_TOKEN"))
+	dis, err = discordgo.New("Bot " + os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Fatalf("Failed to create bot instance: %v", err)
 	}
@@ -29,13 +30,21 @@ func init() {
 var (
 	db           *handlers.DatabaseHandler
 	notification *handlers.NotificationHandler
+	command      *handlers.CommandHandler
 )
 
 func init() {
 	db = handlers.MakeDatabaseHandler()
-	notification = handlers.MakeNotificationHandler(db, s)
+	notification = handlers.MakeNotificationHandler(db, dis)
+	command = handlers.MakeCommandHandler(db, notification, dis)
 }
 
+
 func main() {
-	notification.QueryForAnime("test")
+	defer dis.Close()
+	
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	log.Println("Press Ctrl+C to exit")
+	<-stop
 }
