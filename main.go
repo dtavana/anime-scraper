@@ -1,23 +1,28 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"log"
-	"net/http"
+	"os"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 )
 
-var webhookEndpoint string = "https://discord.com/api/webhooks/1162186214045122601/2t5gNunVxhNod_frbu8aUF05bgLWMVrGlHJ38e_qsBywE8uadla_FHxgXRQPVpQ3XDNv"
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading environment variables")
+	}
+}
+
+var s *discordgo.Session
+func init() {
+	var err error
+	s, err = discordgo.New("Bot " + os.Getenv("BOT_TOKEN"))
+	if err != nil {
+		log.Fatalf("Failed to create bot instance: %v", err)
+	}
+}
 
 func main() {
-	title := "JJK"
-	episodeNumber := "690"
-	imgUrl := "https://static.bunnycdn.ru/i/cache/images/c/c2/c2c8b3ae50a1b5e71d792ce9cff52431.jpg"
-	watchUrl := "https://aniwave.to/watch/jujutsu-kaisen-2nd-season.ll3x3/ep-11"
-	embed := makeAnimeEmbed(title, episodeNumber, imgUrl, watchUrl)
-	jsonBody, _ := json.Marshal(embed)
-	_, err := http.Post(webhookEndpoint, "application/json", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		log.Fatal(err)
-	}
 }
