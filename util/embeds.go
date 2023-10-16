@@ -11,3 +11,11 @@ func SuccessEmbed(message string) *discordgo.MessageEmbed {
 	}
 	return &embed
 }
+
+func ErrorEmbed(message string) *discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		Description: message,
+		Color:       0xFF0000,
+	}
+	return &embed
+}
