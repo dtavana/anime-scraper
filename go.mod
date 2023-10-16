@@ -1,4 +1,4 @@
-module animescraper
+module github.com/dtavana/anime-scraper
 
 go 1.21.3
 

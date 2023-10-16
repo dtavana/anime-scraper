@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"animescraper/util"
+	"github.com/dtavana/anime-scraper/util"
 	"fmt"
 	"log"
 

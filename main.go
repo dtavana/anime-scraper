@@ -1,7 +1,7 @@
 package main
 
 import (
-	"animescraper/handlers"
+	"github.com/dtavana/anime-scraper/handlers"
 	"log"
 	"os"
 	"os/signal"
