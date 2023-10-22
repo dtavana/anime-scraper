@@ -11,13 +11,13 @@ import (
 )
 
 type Item struct {
-	Url         string
-	LastEpisode int
+	MalId   string
+	WatchUrl string
 }
 
 type DatabaseHandler struct {
-	session *session.Session
-	svc     *dynamodb.DynamoDB
+	session   *session.Session
+	svc       *dynamodb.DynamoDB
 	tableName *string
 }
 
@@ -29,7 +29,7 @@ func MakeDatabaseHandler() *DatabaseHandler {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 	svc := dynamodb.New(session)
-	tableName:= aws.String(os.Getenv("DB_TABLE"))
+	tableName := aws.String(os.Getenv("DB_TABLE"))
 	handler := &DatabaseHandler{session, svc, tableName}
 	handler.setupDatabase()
 	return handler
@@ -47,13 +47,13 @@ func (d DatabaseHandler) setupDatabase() {
 	input := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("Url"),
+				AttributeName: aws.String("MalId"),
 				AttributeType: aws.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("Url"),
+				AttributeName: aws.String("MalId"),
 				KeyType:       aws.String("HASH"),
 			},
 		},
@@ -66,24 +66,24 @@ func (d DatabaseHandler) setupDatabase() {
 	d.svc.CreateTable(input)
 }
 
-func (d DatabaseHandler) AddAnime(url string, episodeNumber int) bool {
-	item := Item{url, episodeNumber}
+func (d DatabaseHandler) AddAnime(malId string, watchUrl string) bool {
+	item := Item{malId, watchUrl}
 	av, err := dynamodbattribute.MarshalMap(item)
 	if err != nil {
 		return false
 	}
 	_, err = d.svc.PutItem(&dynamodb.PutItemInput{
-		Item: av,
+		Item:      av,
 		TableName: d.tableName,
 	})
 	return err == nil
 }
 
-func (d DatabaseHandler) DeleteAnime(url string) bool {
+func (d DatabaseHandler) DeleteAnime(malId string) bool {
 	_, err := d.svc.DeleteItem(&dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"Url": {
-				S: aws.String(url),
+			"MalId": {
+				S: aws.String(malId),
 			},
 		},
 		TableName: d.tableName,
@@ -91,11 +91,11 @@ func (d DatabaseHandler) DeleteAnime(url string) bool {
 	return err == nil
 }
 
-func (d DatabaseHandler) QueryForAnime(url string) *Item {
+func (d DatabaseHandler) QueryForAnime(malId string) *Item {
 	res, err := d.svc.GetItem(&dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"Url": {
-				S: aws.String(url),
+			"MalId": {
+				S: aws.String(malId),
 			},
 		},
 		TableName: d.tableName,
@@ -105,7 +105,7 @@ func (d DatabaseHandler) QueryForAnime(url string) *Item {
 		return nil
 	}
 	if res.Item == nil {
-		log.Printf("Could not find item with URL: %s", url)
+		log.Printf("Could not find item with MalID: %s", malId)
 		return nil
 	} else {
 		item := Item{}

@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/darenliang/jikan-go v1.2.3
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect

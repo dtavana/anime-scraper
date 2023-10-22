@@ -10,16 +10,15 @@ import (
 )
 
 type CommandHandler struct {
-	db           *DatabaseHandler
-	notification *NotificationHandler
-	dis          *discordgo.Session
+	db            *DatabaseHandler
+	notifications *NotificationHandler
+	animes        *AnimeHandler
+	dis           *discordgo.Session
 }
 
 type CommandHandlerFunctionType = func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 var (
-	integerOptionMinValue = 1.0
-
 	commandData = []*discordgo.ApplicationCommand{
 		{
 			Name:        "add-anime",
@@ -27,15 +26,14 @@ var (
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "url",
-					Description: "URL to add to watchlist",
+					Name:        "mal-url",
+					Description: "MyAnimeList URL for the show",
 					Required:    true,
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Name:        "episode",
-					Description: "Current episode the anime is at",
-					MinValue:    &integerOptionMinValue,
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "watch-url",
+					Description: "Watch URL for the show",
 					Required:    true,
 				},
 			},
@@ -46,8 +44,8 @@ var (
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "url",
-					Description: "URL to add to watchlist",
+					Name:        "mal-url",
+					Description: "MyAnimeList URL for the show",
 					Required:    true,
 				},
 			},
@@ -55,8 +53,8 @@ var (
 	}
 )
 
-func MakeCommandHandler(db *DatabaseHandler, notification *NotificationHandler, dis *discordgo.Session) *CommandHandler {
-	commandHandler := &CommandHandler{db, notification, dis}
+func MakeCommandHandler(db *DatabaseHandler, notification *NotificationHandler, anime *AnimeHandler, dis *discordgo.Session) *CommandHandler {
+	commandHandler := &CommandHandler{db, notification, anime, dis}
 	commandHandler.registerHandlers()
 	commandHandler.initialize()
 	return commandHandler
@@ -66,15 +64,49 @@ func (c CommandHandler) generateHandlers() map[string]CommandHandlerFunctionType
 	return map[string]CommandHandlerFunctionType{
 		"add-anime": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := i.ApplicationCommandData().Options
-			url, episodeNumber := options[0].StringValue(), options[1].IntValue()
-			if c.db.AddAnime(url, int(episodeNumber)) {
+			malUrl, watchUrl := options[0].StringValue(), options[1].StringValue()
+			malId, err := util.ParseMalIdFromUrl(malUrl)
+			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Embeds: []*discordgo.MessageEmbed{
-							util.SuccessEmbed(
-								fmt.Sprintf("[Succesfully started tracking new anime starting at episode #%d](%s)", episodeNumber, url),
+							util.ErrorEmbed(
+								"Failed to parse ID from supplied MyAnimeList URL",
 							),
+						},
+					},
+				})
+				return
+			}
+			animeData := c.animes.QueryAnimeData(malId)
+			if animeData == nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Embeds: []*discordgo.MessageEmbed{
+							util.ErrorEmbed(
+								fmt.Sprintf("Failed to query MyAnimeList data with [the supplied url](%s)", malUrl),
+							),
+						},
+					},
+				})
+				return
+			}
+			if c.db.AddAnime(malId, watchUrl) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Embeds: []*discordgo.MessageEmbed{
+							{
+								URL:         animeData.Data.Url,
+								Title:       "New anime added to watchlist",
+								Description: fmt.Sprintf("*%s* has been added to the watchlist", animeData.Data.TitleEnglish),
+								Color:       util.ColorOrange,
+								Image: &discordgo.MessageEmbedImage{
+									URL: animeData.Data.Images.Jpg.ImageUrl,
+								},
+							},
 						},
 					},
 				})
@@ -93,14 +125,28 @@ func (c CommandHandler) generateHandlers() map[string]CommandHandlerFunctionType
 		},
 		"delete-anime": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			options := i.ApplicationCommandData().Options
-			url := options[0].StringValue()
-			if c.db.DeleteAnime(url) {
+			malUrl := options[0].StringValue()
+			malId, err := util.ParseMalIdFromUrl(malUrl)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Embeds: []*discordgo.MessageEmbed{
+							util.ErrorEmbed(
+								"Failed to parse ID from supplied MyAnimeList URL",
+							),
+						},
+					},
+				})
+				return
+			}
+			if c.db.DeleteAnime(malId) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Embeds: []*discordgo.MessageEmbed{
 							util.SuccessEmbed(
-								fmt.Sprintf("[Succesfully delete anime from watchlist](%s)", url),
+								fmt.Sprintf("[Succesfully deleted anime from watchlist](%s)", malUrl),
 							),
 						},
 					},

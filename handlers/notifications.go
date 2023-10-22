@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,18 +14,6 @@ type NotificationHandler struct {
 
 func MakeNotificationHandler(db *DatabaseHandler, dis *discordgo.Session) *NotificationHandler {
 	return &NotificationHandler{db, dis}
-}
-
-func (n NotificationHandler) QueryForAnime(url string) {
-	anime := n.db.QueryForAnime(url)
-	if anime != nil {
-		currentEpisode := 124
-		if anime.LastEpisode < currentEpisode {
-			n.sendEpisodeNotification(currentEpisode)
-		}
-		log.Printf("%s %d", anime.Url, anime.LastEpisode)
-	}
-
 }
 
 func (n NotificationHandler) sendWebhook(embed *discordgo.MessageEmbed) {
